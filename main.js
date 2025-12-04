@@ -1,4 +1,5 @@
 import { ShapeCard } from './shapecard.js';
+import { saveResult, getAverageClicks } from './firebaseClient.js';
 
 const memoryGameTemplate = document.createElement('template');
 memoryGameTemplate.innerHTML = `
@@ -143,7 +144,7 @@ class MemoryGame extends HTMLElement {
         this.updateStats();
     }
 
-    handleCardClick(event) {
+  async handleCardClick(event) {
         const card = event.currentTarget;
         if (this.locked || card.dataset.matched === 'true' || card === this.firstCard) {
             return;
@@ -161,23 +162,23 @@ class MemoryGame extends HTMLElement {
             return;
         }
 
-        this.secondCard = card;
-        this.locked = true;
-        this.checkMatch();
+    this.secondCard = card;
+    this.locked = true;
+    await this.checkMatch();
     }
 
-    checkMatch() {
+  async checkMatch() {
         const isMatch = this.firstCard.dataset.type === this.secondCard.dataset.type &&
             this.firstCard.dataset.colour === this.secondCard.dataset.colour;
 
         if (isMatch) {
-            this.markMatch();
+      await this.markMatch();
         } else {
             this.resetMismatch();
         }
     }
 
-    markMatch() {
+  async markMatch() {
         [this.firstCard, this.secondCard].forEach(card => {
             card.dataset.matched = 'true';
             card.setAttribute('aria-disabled', 'true');
@@ -187,7 +188,13 @@ class MemoryGame extends HTMLElement {
         this.clearSelection();
 
         if (this.matches === this.pairs) {
-            this.setMessage(`Completed in ${this.moves} moves.`);
+      this.setMessage(`Completed in ${this.moves} moves.`);
+      try {
+        await saveResult(this.moves);
+      } catch (err) {
+        this.setMessage(`Completed in ${this.moves} moves (save failed)`);
+        console.error('Failed to save result', err);
+      }
         }
         this.locked = false;
     }
@@ -217,3 +224,32 @@ class MemoryGame extends HTMLElement {
 }
 
 customElements.define('memory-game', MemoryGame);
+
+const averageButton = document.getElementById('show-average');
+const averageOutput = document.getElementById('average-output');
+const averageError = document.getElementById('average-error');
+
+if (averageButton && averageOutput && averageError) {
+  averageButton.addEventListener('click', async () => {
+    averageButton.disabled = true;
+    averageError.textContent = '';
+    averageOutput.textContent = 'Loading...';
+    try {
+      const avg = await getAverageClicks();
+      if (avg === null) {
+        averageOutput.textContent = 'No data yet';
+      } else {
+        averageOutput.textContent = `${avg.toFixed(2)} clicks`;
+      }
+    } catch (err) {
+      console.error('Failed to fetch average', err);
+      averageError.textContent = 'Failed to fetch average clicks';
+      averageOutput.textContent = '';
+    } finally {
+      averageButton.disabled = false;
+      if (averageOutput.textContent === 'Loading...') {
+        averageOutput.textContent = '';
+      }
+    }
+  });
+}
