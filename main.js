@@ -1,5 +1,6 @@
 import { ShapeCard } from './shapecard.js';
 import { saveResult, getAverageClicks } from './firebaseClient.js';
+import { parseSize } from './gameUtils.js';
 
 const memoryGameTemplate = document.createElement('template');
 memoryGameTemplate.innerHTML = `
@@ -89,9 +90,9 @@ class MemoryGame extends HTMLElement {
         this.setup();
     }
 
-    setup() {
-        const sizeAttr = this.getAttribute('size') || this.getAttribute('data-size');
-        const { rows, cols } = this.parseSize(sizeAttr);
+  setup() {
+    const sizeAttr = this.getAttribute('size') || this.getAttribute('data-size');
+    const { rows, cols } = parseSize(sizeAttr);
         this.rows = rows;
         this.cols = cols;
         this.pairs = (rows * cols) / 2;
@@ -111,23 +112,6 @@ class MemoryGame extends HTMLElement {
         this.boardEl.style.gridTemplateColumns = `repeat(${cols}, ${ShapeCard.WIDTH})`;
         this.renderBoard();
         this.setMessage(`Board ${rows} x ${cols}. Find all ${this.pairs} pairs.`);
-    }
-
-    parseSize(raw) {
-        const cleaned = (raw || '').toLowerCase().replace(/\s+/g, '');
-        const match = cleaned.match(/^(\d+)x(\d+)$/);
-        if (!match) {
-            throw new Error('Size attribute must be in the form rowsxcols, e.g., 3x4.');
-        }
-        const rows = parseInt(match[1], 10);
-        const cols = parseInt(match[2], 10);
-        if (rows < 1 || cols < 1) {
-            throw new Error('Rows and columns must be positive integers.');
-        }
-        if ((rows * cols) % 2 !== 0) {
-            throw new Error('Board must have an even number of slots for pairs.');
-        }
-        return { rows, cols };
     }
 
     renderBoard() {

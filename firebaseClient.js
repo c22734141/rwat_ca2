@@ -16,7 +16,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-connectFirestoreEmulator(db, 'localhost', 8080);
+const useEmulator = !(typeof process !== 'undefined' && process?.env?.CI);
+if (useEmulator) {
+  connectFirestoreEmulator(db, 'localhost', 8080);
+}
 
 const RESULTS_COLLECTION = 'gameResults';
 
