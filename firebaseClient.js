@@ -9,14 +9,19 @@ import {
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: 'demo-ca2',
-  apiKey: 'demo',
-  appId: 'demo',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-ca2',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'demo',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const useEmulator = !(typeof process !== 'undefined' && process?.env?.CI);
+const hasProdConfig = Boolean(import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_API_KEY);
+const useEmulator = !hasProdConfig && !(typeof process !== 'undefined' && process?.env?.CI);
 if (useEmulator) {
   connectFirestoreEmulator(db, 'localhost', 8080);
 }
